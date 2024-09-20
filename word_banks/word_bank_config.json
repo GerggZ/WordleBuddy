@@ -1,0 +1,8 @@
+{
+  "word_banks": {
+    "german": "German_Word_Bank.txt",
+    "spanish": "Spanish_Word_Bank.txt",
+    "austrian": "Austrian_Word_Bank.txt",
+    "english": "English_Word_Bank.txt"
+  }
+}
