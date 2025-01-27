@@ -1,0 +1,8 @@
+/venv
+.idea
+__pycache__
+.gitignore
+
+archive/
+testing/
+wordle_solver.egg-info/
