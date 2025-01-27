@@ -1,6 +1,10 @@
 import numpy as np
+from typing import TYPE_CHECKING
+
 from wordle_solver.utils.word_bank_manager import WordBankManager
 from wordle_solver.utils.word_scorer_entropy import WordScorerEntropy
+from wordle_solver.utils.hyperparameters import Hyperparameters
+
 
 class WordleGuesser:
     """
@@ -8,15 +12,17 @@ class WordleGuesser:
     Uses WordBankManager for word storage and WordScorer for ranking guesses.
     """
 
-    def __init__(self, language: str, hparams=None):
+    def __init__(self, language: str, hparams: "Hyperparameters" = Hyperparameters()) -> None:
         """
         Initializes the WordleGuesser with a specific language.
 
-        :param language: The language of the word bank (e.g., 'english', 'german', etc.).
-        :param hparams: Hyperparameters object for entropy calculations.
+        Args:
+            - language: The language of the word bank (e.g., 'english', 'german', 'austrian', 'spanish').
+            - hparams: Hyperparameters object for entropy calculations.
         """
         self.word_bank = WordBankManager(language)  # Load word bank
         self.scorer = WordScorerEntropy(self.word_bank, hparams)  # Attach entropy-based scorer
+
         self.attempts = []  # Stores previous guesses and feedback
 
     def process_guess(self, guess: str, feedback: list):
@@ -45,14 +51,14 @@ class WordleGuesser:
         for guess, feedback in zip(guesses, feedbacks):
             self.process_guess(guess, feedback)
 
-    def best_guess(self, num_best_guesses: int = 3) -> list:
+    def best_guess(self, num_best_guesses: int = 1) -> list:
         """
         Returns the top `num_best_guesses` best words based on entropy scoring.
 
         :param num_best_guesses: Number of best guesses to return.
         :return: A list of the best words as strings, sorted by entropy score.
         """
-        scores = self.scorer.score_word_bank()
+        scores = self.scorer.score_word_bank(attempt_num=len(self.attempts))
         num_available = len(self.word_bank.possible_word_bank)
 
         # Ensure we don't request more than available words
