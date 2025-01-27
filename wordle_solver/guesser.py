@@ -1,5 +1,4 @@
 import numpy as np
-from typing import TYPE_CHECKING
 
 from wordle_solver.utils.word_bank_manager import WordBankManager
 from wordle_solver.utils.word_scorer_entropy import WordScorerEntropy
