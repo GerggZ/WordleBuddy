@@ -48,7 +48,7 @@ class WordleGuesser:
 
         self.reset_game()  # Reset the word bank before processing
         for guess, feedback in zip(guesses, feedbacks):
-            self.process_guess(guess, feedback)
+            self.process_guess(guess.lower(), feedback)
 
     def best_guess(self, num_best_guesses: int = 1) -> list:
         """

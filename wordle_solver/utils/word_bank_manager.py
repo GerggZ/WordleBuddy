@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from typing import Dict, List
 import importlib.resources as pkg_resources
 
@@ -20,7 +21,8 @@ class WordBankManager:
         self.full_word_bank, self.ascii_converter_key = self._load_word_bank(language)
         self.possible_word_bank = self.full_word_bank.copy()
 
-    def _load_word_bank(self, language: str) -> np.ndarray:
+    @staticmethod
+    def _load_word_bank(language: str) -> np.ndarray:
         """Loads and converts the word bank from the package directory."""
         file_name = f"{language}_word_bank.npy"
 
@@ -42,7 +44,7 @@ class WordBankManager:
         return normalized_word_bank, min_value
 
     @staticmethod
-    def _find_duplicates(word: str) -> Dict[str, int]:
+    def _find_duplicates(word: NDArray) -> Dict[int, int]:
         """Counts occurrences of each letter in the guessed word."""
         counts = np.bincount(word)
         return {char: count for char, count in enumerate(counts) if count > 0}
@@ -63,12 +65,12 @@ class WordBankManager:
         wrong_position = self.possible_word_bank[:, index] != correct  # But NOT in this position
         self.possible_word_bank = self.possible_word_bank[(contains_letter) & (wrong_position)]  # Parentheses for clarity
 
-    def _remove_duplicate_letters(self, letter: str, max_count: int) -> None:
+    def _remove_duplicate_letters(self, letter: int, max_count: int) -> None:
         """Removes words where the letter appears more times than allowed."""
-        counts = np.char.count(self.possible_word_bank, letter)  # Count occurrences in each word
+        counts = (self.possible_word_bank == letter).sum(axis=1)
         self.possible_word_bank = self.possible_word_bank[counts <= max_count]
 
-    def _regular_removal(self, guess: str, information: List[str]) -> None:
+    def _regular_removal(self, guess: NDArray, information: List[str]) -> None:
         """
         Applies filtering based on Wordle feedback.
 
@@ -110,7 +112,7 @@ class WordBankManager:
                     elif color == 'yellow':
                         self._remove_yellow(i, letter)
 
-    def decode_word(self, word: np.ndarray) -> str:
+    def decode_word(self, word: NDArray) -> str:
         """Converts a numpy array of integers back to a string using the stored min_value."""
         return "".join(chr(char + self.ascii_converter_key) for char in word)
 
