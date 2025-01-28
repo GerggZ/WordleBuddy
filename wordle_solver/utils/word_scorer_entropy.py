@@ -41,11 +41,11 @@ class WordScorerEntropy:
         )
 
     def _precompute_letter_frequencies(self) -> None:
-        """Counts the frequency of each letter in each position across the list of possible words."""
+        """Counts the frequency of each letter in each position across the list of words in the current word bank."""
         # Vectorized counting operation
         self.char_freq_table.fill(0)  # Reset frequencies
-        for pos in range(self.word_bank.possible_word_bank.shape[1]):
-            np.add.at(self.char_freq_table, (self.word_bank.possible_word_bank[:, pos], pos), 1)
+        for pos in range(self.current_word_bank.shape[1]):
+            np.add.at(self.char_freq_table, (self.current_word_bank[:, pos], pos), 1)
 
     def _calculate_entropy_scores(self) -> NDArray:
         """

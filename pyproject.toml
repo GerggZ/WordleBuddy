@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wordle_solver"
-version = "0.1.4"
+version = "0.1.5"
 description = "A Python package for solving Wordle puzzles"
 readme = "README.md"
 authors = [{ name = "Greggory Zinniel", email = "gzinniel.github@gmail.com" }]
