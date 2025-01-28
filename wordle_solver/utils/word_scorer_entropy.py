@@ -13,7 +13,7 @@ class WordScorerEntropy:
     Connected to WordBankManager and dynamically updates based on possible words.
     """
 
-    def __init__(self, word_bank: "WordBankManager", hparams: "Hyperparameters"):
+    def __init__(self, word_bank: "WordBankManager", hparams: "Hyperparameters", hardcore_mode: bool = False):
         """
         Initializes the entropy-based word scorer.
 
@@ -22,10 +22,23 @@ class WordScorerEntropy:
         """
         self.word_bank = word_bank
         self.hparams = hparams
+        self.hardcore_mode = hardcore_mode
+        self.toggle_mode(hardcore_mode)
 
         # Dynamically determine the highest Unicode character used
         max_unicode = np.max(self.word_bank.full_word_bank)  # Get max Unicode value from word bank
         self.char_freq_table = np.zeros((max_unicode + 1, 5), dtype=np.int32)
+
+    def toggle_mode(self, hardcore_mode: bool) -> None:
+        """
+        Toggles between possible_word_bank and full_word_bank based on the hardcore mode.
+
+        :param hardcore_mode: If True, uses full_word_bank; otherwise, uses possible_word_bank.
+        """
+        self.hardcore_mode = hardcore_mode
+        self.current_word_bank = (
+            self.word_bank.full_word_bank if self.hardcore_mode else self.word_bank.possible_word_bank
+        )
 
     def _precompute_letter_frequencies(self) -> None:
         """Counts the frequency of each letter in each position across the list of possible words."""
@@ -42,7 +55,7 @@ class WordScorerEntropy:
         """
         self._precompute_letter_frequencies()
 
-        total_words = len(self.word_bank.possible_word_bank)  # Total number of words
+        total_words = len(self.current_word_bank)  # Total number of words
         total_char_frequencies = np.sum(self.char_freq_table, axis=1)  # Overall frequency of each character
 
         # Probabilities for Green, Yellow, and White entropies
