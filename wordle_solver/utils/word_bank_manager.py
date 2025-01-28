@@ -102,7 +102,7 @@ class WordBankManager:
                 return
 
             if count == 1:
-                self._regular_removal(guess[0], indices[0], feedback[0])
+                self._regular_removal(letter, indices[0], feedback[0])
             else:
                 if 'gray' in feedback:
                     max_count = len(feedback) - feedback.count('gray')
