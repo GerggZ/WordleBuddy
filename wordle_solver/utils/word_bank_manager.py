@@ -46,7 +46,7 @@ class WordBankManager:
     @staticmethod
     def _find_duplicates(word: NDArray) -> Dict[int, int]:
         """Counts occurrences of each letter in the guessed word."""
-        counts = np.bincount(word)
+        counts = np.bincount(word[word >= 0])
         return {char: count for char, count in enumerate(counts) if count > 0}
 
     def _remove_gray(self, incorrect: int) -> None:
