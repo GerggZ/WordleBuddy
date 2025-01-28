@@ -31,7 +31,7 @@ class WordleGuesser:
         :param guess: The guessed word (string).
         :param feedback: A list of feedback ('gray', 'yellow', 'green') for each letter.
         """
-        guess = np.array([ord(char) - self.word_bank.ascii_converter_key for char in guess])  # Convert guess to ascii
+        guess = self.word_bank.encode_word(guess)  # Convert guess to ascii
         self.attempts.append((guess, feedback))
         self.word_bank.cull(guess, feedback)
 

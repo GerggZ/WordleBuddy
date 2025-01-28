@@ -70,20 +70,19 @@ class WordBankManager:
         counts = (self.possible_word_bank == letter).sum(axis=1)
         self.possible_word_bank = self.possible_word_bank[counts <= max_count]
 
-    def _regular_removal(self, guess: NDArray, information: List[str]) -> None:
+    def _regular_removal(self, letter: int, position: int, feedback: str) -> None:
         """
         Applies filtering based on Wordle feedback.
 
         :param guess: The guessed word.
         :param information: List of feedback ('gray', 'yellow', 'green').
         """
-        for i, color in enumerate(information):
-            if color == 'gray':
-                self._remove_gray(guess[i])  # Remove words containing this letter
-            elif color == 'green':
-                self._remove_green(i, guess[i])  # Keep words with this letter at correct position
-            elif color == 'yellow':
-                self._remove_yellow(i, guess[i])  # Keep words containing the letter but not at this position
+        if feedback == 'gray':
+            self._remove_gray(letter)  # Remove words containing this letter
+        elif feedback == 'green':
+            self._remove_green(position, letter)  # Keep words with this letter at correct position
+        elif feedback == 'yellow':
+            self._remove_yellow(position, letter)  # Keep words containing the letter but not at this position
 
     def cull(self, guess: str, information: List[str]) -> None:
         """
@@ -99,8 +98,11 @@ class WordBankManager:
             indices = indices_dict[letter]
             feedback = [information[i] for i in indices]
 
+            if len(self.possible_word_bank) == 0:
+                return
+
             if count == 1:
-                self._regular_removal(guess, information)
+                self._regular_removal(guess[0], indices[0], feedback[0])
             else:
                 if 'gray' in feedback:
                     max_count = len(feedback) - feedback.count('gray')
@@ -113,8 +115,12 @@ class WordBankManager:
                         self._remove_yellow(i, letter)
 
     def decode_word(self, word: NDArray) -> str:
-        """Converts a numpy array of integers back to a string using the stored min_value."""
+        """Converts a numpy array of integers back to a string using the stored ascii converter key value."""
         return "".join(chr(char + self.ascii_converter_key) for char in word)
+
+    def encode_word(self, word: str) -> NDArray:
+        """Converts string into a numpy array of integers using the stored ascii converter key value."""
+        return np.array([ord(char.lower()) - self.ascii_converter_key for char in word])  # Convert guess to ascii
 
     def reset(self) -> None:
         """Resets the possible words list to the full original list."""
