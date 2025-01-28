@@ -13,7 +13,7 @@ dependencies = ["numpy"]  # Add more dependencies as needed
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["wordle_solver*"]  # Includes all submodules inside wordle_solver/
+include = ["wordle_solver", "wordle_solver.utils", "wordle_solver.word_banks"]
 
 [tool.setuptools.package-data]
 "wordle_solver.word_banks" = ["*.npy"]
