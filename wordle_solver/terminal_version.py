@@ -53,7 +53,6 @@ class WordleTerminalHelper:
 
             break
 
-
         while True:
             feedback = input("Enter your guesses feedback (e.g., 'ggwyw') (or 'exit' to quit): ").strip()
             if feedback.lower() == 'exit':
