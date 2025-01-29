@@ -54,21 +54,24 @@ class WordBankManager:
         mask = ~np.any(self.possible_word_bank == incorrect, axis=1)  # Find words without the letter
         self.possible_word_bank = self.possible_word_bank[mask]
 
-    def _remove_green(self, index: int, correct: int) -> None:
+    def _remove_green(self, index: int, letter: int) -> None:
         """Keeps only words where the correct letter is in the exact position (green feedback)."""
-        mask = self.possible_word_bank[:, index] == correct
+        mask = self.possible_word_bank[:, index] == letter
         self.possible_word_bank = self.possible_word_bank[mask]
 
-    def _remove_yellow(self, index: int, correct: int) -> None:
+    def _remove_yellow(self, index: int, letter: int,  confirmed_indices: list[int] = []) -> None:
         """Removes words where the letter is in the wrong position but ensures it is present elsewhere (yellow feedback)."""
-        contains_letter = np.any(self.possible_word_bank == correct, axis=1)  # Letter must be present somewhere
-        wrong_position = self.possible_word_bank[:, index] != correct  # But NOT in this position
+        contains_letter = np.any(
+            np.delete(self.possible_word_bank, confirmed_indices, axis=1) == letter,
+            axis=1
+        )
+        wrong_position = self.possible_word_bank[:, index] != letter  # But NOT in this position
         self.possible_word_bank = self.possible_word_bank[(contains_letter) & (wrong_position)]  # Parentheses for clarity
 
-    def _remove_duplicate_letters(self, letter: int, max_count: int) -> None:
-        """Removes words where the letter appears more times than allowed."""
+    def _filter_by_letter_count(self, letter: int, min_count: int, max_count: int) -> None:
+        """Removes words where the letter appears more or less times than allowed."""
         counts = (self.possible_word_bank == letter).sum(axis=1)
-        self.possible_word_bank = self.possible_word_bank[counts <= max_count]
+        self.possible_word_bank = self.possible_word_bank[(min_count <= counts) & (counts <= max_count)]
 
     def _regular_removal(self, letter: int, position: int, feedback: str) -> None:
         """
@@ -104,15 +107,21 @@ class WordBankManager:
             if count == 1:
                 self._regular_removal(letter, indices[0], feedback[0])
             else:
+                max_count = len(guess)
                 if 'gray' in feedback:
                     max_count = len(feedback) - feedback.count('gray')
-                    self._remove_duplicate_letters(letter, max_count)
+                min_count = feedback.count('yellow') + feedback.count('green')
+                self._filter_by_letter_count(letter, min_count, max_count)
 
-                for i, color in zip(indices, feedback):
-                    if color == 'green':
-                        self._remove_green(i, letter)
-                    elif color == 'yellow':
-                        self._remove_yellow(i, letter)
+                green_indices = [i for i, color in zip(indices, feedback) if color == 'green']
+                yellow_indices = [i for i, color in zip(indices, feedback) if color == 'yellow']
+
+                # Apply removals
+                for idx in green_indices:
+                    self._remove_green(idx, letter)
+
+                for idx in yellow_indices:
+                    self._remove_yellow(idx, letter, green_indices)
 
     def decode_word(self, word: NDArray) -> str:
         """Converts a numpy array of integers back to a string using the stored ascii converter key value."""
