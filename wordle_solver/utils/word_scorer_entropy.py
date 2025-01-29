@@ -131,20 +131,20 @@ class WordScorerEntropy:
                 white_entropy[self.working_word_bank, np.arange(word_length)] * white_penalty
         )
 
-        # Identify potential answers and apply weighting
-        is_potential_answer = np.isin(
-            self.working_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}'),
-            self.word_bank.possible_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}')
-        )
-        is_potential_answer = np.broadcast_to(
-            is_potential_answer, self.working_word_bank.shape
-        )
-        non_valid_penalty = 1 / (1 + np.exp(1.3 * attempt_num - self.hparams.max_guesses - 2))
-        if len(self.word_bank.possible_word_bank <= 2) or attempt_num == self.hparams.max_guesses:
-            # if there are less than two words left...or it is our last guess just punt it
-            non_valid_penalty = 0.0
 
-        word_entropies *= np.where(is_potential_answer, 1, non_valid_penalty)
+
+        non_valid_penalty = 1.0
+        if self.word_bank.possible_word_bank.shape[0] <= 2 or attempt_num == self.hparams.max_guesses:
+            # Identify potential answers and apply weighting
+            is_potential_answer = np.isin(
+                self.working_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}'),
+                self.word_bank.possible_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}')
+            )
+            is_potential_answer = np.broadcast_to(
+                is_potential_answer, self.working_word_bank.shape
+            )
+            # if there are less than two words left...or it is our last guess just punt it
+            word_entropies *= np.where(is_potential_answer, 1, 0)
 
         return word_entropies
 
