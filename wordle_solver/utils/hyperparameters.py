@@ -13,7 +13,7 @@ class Hyperparameters:
         - consonant_position_weights (array): List of weights assigned to consonants at each position.
         - repeat_letter_penalty (float): Penalty applied when a word contains repeated letters.
         - mismatch_penalty (float): Penalty applied for letters that are in the word but not in the correct position.
-        - answer_weight_base (float): Base weight used to adjust scoring for words that can be valid answers.
+        - invalid_word_decay_rate_penalty (float): Used to calculate penalty applied to words that are not valid answers
         - max_guesses (int): The maximum number of guesses allowed during the game.
         - hardcore_mode (bool): Using the full word bank or just the possible word bank as guessing possibilities
     """
@@ -21,7 +21,7 @@ class Hyperparameters:
     consonant_pos_weights: list[float] = field(default_factory=lambda: np.array([1.5, 1.0, 1.2, 1.1, 1.5]))
     repeat_letter_penalty: float = 1.3
     mismatch_penalty: float = 2.0
-    answer_weight_base: float = 1.0
+    invalid_word_decay_rate_penalty: float = 0.5
     max_guesses: int = 6
 
     hardcore_mode: bool = False
@@ -39,8 +39,8 @@ class Hyperparameters:
             raise ValueError("Repeat letter penalty must be positive.")
         if self.mismatch_penalty <= 0:
             raise ValueError("Mismatch penalty must be positive.")
-        if self.answer_weight_base <= 0:
-            raise ValueError("Answer weight base must be positive.")
+        if self.invalid_word_decay_rate_penalty <= 0:
+            raise ValueError("Non-answer decay rate must be positive.")
         if self.max_guesses <= 0:
             raise ValueError("Max guesses must be a positive integer.")
         if not isinstance(self.hardcore_mode, bool):

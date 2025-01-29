@@ -22,7 +22,7 @@ class WordleGuesser:
         self.word_bank = WordBankManager(language)  # Load word bank
         self.scorer = WordScorerEntropy(self.word_bank, hparams)  # Attach entropy-based scorer
 
-        self.attempts = []  # Stores previous guesses and feedback
+        self.attempts = []
 
     def process_guess(self, guess: str, feedback: list):
         """
@@ -32,8 +32,8 @@ class WordleGuesser:
         :param feedback: A list of feedback ('gray', 'yellow', 'green') for each letter.
         """
         guess = self.word_bank.encode_word(guess)  # Convert guess to ascii
-        self.attempts.append((guess, feedback))
         self.word_bank.cull(guess, feedback)
+        self.attempts.append((guess, feedback))
 
     def process_guesses(self, guesses: list, feedbacks: list):
         """
@@ -57,15 +57,14 @@ class WordleGuesser:
         :param num_best_guesses: Number of best guesses to return.
         :return: A list of the best words as strings, sorted by entropy score.
         """
-        scores = self.scorer.score_word_bank(attempt_num=len(self.attempts))
-        num_available = len(self.word_bank.possible_word_bank)
+        scores = self.scorer.score_word_bank(attempt_num=len(self.attempts) + 1)
+        num_available = len(self.scorer.current_word_bank)
 
         # Ensure we don't request more than available words
         num_best_guesses = min(num_best_guesses, num_available)
 
-        # Get indices of top `num_best_guesses` scores, sorted in descending order
-        best_indices = np.argsort(scores)[-num_best_guesses:][::-1]
-        best_guesses_ascii = [self.word_bank.possible_word_bank[i] for i in best_indices]
+        best_indices = np.argsort(scores)[::-1][:num_best_guesses]
+        best_guesses_ascii = [self.scorer.working_word_bank[i] for i in best_indices]
         best_guesses_chars = [self.word_bank.decode_word(word) for word in best_guesses_ascii]
 
         # Return best guesses as a list of strings

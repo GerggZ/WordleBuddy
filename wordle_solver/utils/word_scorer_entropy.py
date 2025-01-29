@@ -13,7 +13,7 @@ class WordScorerEntropy:
     Connected to WordBankManager and dynamically updates based on possible words.
     """
 
-    def __init__(self, word_bank: "WordBankManager", hparams: "Hyperparameters", hardcore_mode: bool = False):
+    def __init__(self, word_bank: "WordBankManager", hparams: "Hyperparameters", hardcore_mode: bool = True):
         """
         Initializes the entropy-based word scorer.
 
@@ -23,11 +23,13 @@ class WordScorerEntropy:
         self.word_bank = word_bank
         self.hparams = hparams
         self.hardcore_mode = hardcore_mode
-        self.toggle_mode(hardcore_mode)
+
+        # Find all unique characters and generate a hash table
+        unique_chars = sorted(np.unique(self.word_bank.full_word_bank))
+        self.char_map = {char: idx for idx, char in enumerate(unique_chars)}
 
         # Dynamically determine the highest Unicode character used
-        max_unicode = np.max(self.word_bank.full_word_bank)  # Get max Unicode value from word bank
-        self.char_freq_table = np.zeros((max_unicode + 1, 5), dtype=np.int32)
+        self.max_unicode = np.max(self.word_bank.full_word_bank)  # Get max Unicode value from word bank
 
     def toggle_mode(self, hardcore_mode: bool) -> None:
         """
@@ -36,16 +38,24 @@ class WordScorerEntropy:
         :param hardcore_mode: If True, uses full_word_bank; otherwise, uses possible_word_bank.
         """
         self.hardcore_mode = hardcore_mode
-        self.current_word_bank = (
-            self.word_bank.full_word_bank if self.hardcore_mode else self.word_bank.possible_word_bank
-        )
 
-    def _precompute_letter_frequencies(self) -> None:
+    @property
+    def current_word_bank(self) -> NDArray:
+        if self.hardcore_mode == True:
+            return self.word_bank.possible_word_bank
+        else:
+            return self.word_bank.full_word_bank
+
+    def _precompute_letter_frequencies(self) -> NDArray:
         """Counts the frequency of each letter in each position across the list of words in the current word bank."""
         # Vectorized counting operation
-        self.char_freq_table.fill(0)  # Reset frequencies
-        for pos in range(self.current_word_bank.shape[1]):
-            np.add.at(self.char_freq_table, (self.current_word_bank[:, pos], pos), 1)
+        char_freq_table = np.zeros((self.max_unicode + 1, 5), dtype=np.int32)
+
+        char_freq_table.fill(0)  # Reset frequencies
+        for pos in range(self.word_bank.possible_word_bank.shape[1]):
+            np.add.at(char_freq_table, (self.word_bank.possible_word_bank[:, pos], pos), 1)
+
+        return char_freq_table
 
     def _calculate_entropy_scores(self) -> NDArray:
         """
@@ -53,31 +63,29 @@ class WordScorerEntropy:
 
         :return: NumPy array containing scores for all words.
         """
-        self._precompute_letter_frequencies()
+        char_freq_table = self._precompute_letter_frequencies()
+        total_char_freq_table = np.sum(char_freq_table, axis=1)  # Sum across positions
 
-        total_words = len(self.current_word_bank)  # Total number of words
-        total_char_frequencies = np.sum(self.char_freq_table, axis=1)  # Overall frequency of each character
+        total_viable_words = len(self.word_bank.possible_word_bank)  # Total number of words (of the viable guesses)
 
         # Probabilities for Green, Yellow, and White entropies
+        p_green = char_freq_table / total_viable_words
+        p_yellow = (total_char_freq_table[:, None] - char_freq_table) / total_viable_words
+        p_white = 1 - total_char_freq_table / total_viable_words
+
         # Clip to ensure probabilities are between 0 and 1
         epsilon = 1e-10
-        p_green = np.clip(
-            self.char_freq_table / total_words, epsilon, 1 - epsilon
-        )  # Probability of the letter being in the correct position
-        p_yellow = np.clip(
-            (total_char_frequencies[:, None] - self.char_freq_table) / total_words, epsilon, 1 - epsilon
-        )  # Probability of the letter being in the word but in the wrong position
-        p_white = np.clip(
-            1 - total_char_frequencies / total_words, epsilon, 1 - epsilon
-        )  # Probability of the letter not appearing in the word
+        p_green = np.clip(p_green, epsilon, 1 - epsilon)
+        p_yellow = np.clip(p_yellow, epsilon, 1 - epsilon)
+        p_white = np.clip(p_white, epsilon, 1 - epsilon)
 
         # Compute entropy safely using binary entropy formula H(p) = -p log2(p) - (1-p) log2(1-p)
         green_entropy = -p_green * np.log2(p_green) - (1 - p_green) * np.log2(1 - p_green)
         yellow_entropy = -p_yellow * np.log2(p_yellow) - (1 - p_yellow) * np.log2(1 - p_yellow)
         white_entropy = -p_white * np.log2(p_white) - (1 - p_white) * np.log2(1 - p_white)
 
-        # Expand white entropy to match positions
-        white_entropy = white_entropy[:, None]  # Shape (m, 1) to broadcast correctly across positions
+        # Expand white entropy so it is for every character position
+        white_entropy = np.broadcast_to(white_entropy[:, None], green_entropy.shape)
 
         return green_entropy, yellow_entropy, white_entropy
 
@@ -101,47 +109,61 @@ class WordScorerEntropy:
         Returns:
             - NDArray: Adjusted word entropies
         """
-        # Combine entropies
-        weighted_entropy = green_entropy + yellow_entropy + white_entropy
-
-        # Get word matrix (integer representation of words)
-        words_matrix = self.word_bank.possible_word_bank  # Shape: (num_words, 5)
-
-        # Use the length of self.char_freq_table to define the bin count size
-        bin_count_size = len(self.char_freq_table)
-
         # per-word character frequency calculation
-        num_words, word_length = words_matrix.shape
-        per_word_char_frequencies = np.zeros((num_words, bin_count_size), dtype=int)
+        num_viable_words, word_length = self.working_word_bank.shape
+        per_word_char_frequencies = np.zeros((num_viable_words, self.max_unicode + 1), dtype=int)
 
         # Efficiently count character occurrences per word using np.add.at()
-        np.add.at(per_word_char_frequencies, (np.arange(num_words)[:, None], words_matrix), 1)
+        np.add.at(per_word_char_frequencies, (np.arange(num_viable_words)[:, None], self.working_word_bank), 1)
 
         # Extract frequency counts for each character in its respective position
-        char_frequencies = np.take_along_axis(per_word_char_frequencies, words_matrix, axis=1)  # Shape: (num_words, 5)
+        char_frequencies = np.take_along_axis(per_word_char_frequencies, self.working_word_bank, axis=1)  # Shape: (num_viable_words, 5)
 
         # Compute smoothed yellow entropy penalty
-        yellow_penalty_factors = (1 + (1 / char_frequencies)) / 2  # Progressive but softer penalty
+        yellow_penalty = (1 + (1 / char_frequencies)) / 2  # Progressive but softer penalty
 
         # Compute white entropy averaging (unchanged)
-        white_penalty_factors = np.where(char_frequencies > 0, 1 / char_frequencies, 1)
+        white_penalty = np.where(char_frequencies > 0, 1 / char_frequencies, 1)
 
-        # Identify repeated letters
-        repeated_mask = char_frequencies > 1  # True where a character appears more than once
-
-        # Extract entropies for words in the possible word bank
-        word_entropies = weighted_entropy[
-            self.word_bank.possible_word_bank, np.arange(self.word_bank.possible_word_bank.shape[1])
-        ]
-        # Apply penalties in a single vectorized operation
-        word_entropies *= np.where(repeated_mask, yellow_penalty_factors * white_penalty_factors, 1)
+        word_entropies = (
+                green_entropy[self.working_word_bank, np.arange(word_length)] +
+                yellow_entropy[self.working_word_bank, np.arange(word_length)] * yellow_penalty +
+                white_entropy[self.working_word_bank, np.arange(word_length)] * white_penalty
+        )
 
         # Identify potential answers and apply weighting
-        is_potential_answer = np.isin(self.word_bank.possible_word_bank, self.word_bank.possible_word_bank)
-        answer_weights = self.hparams.answer_weight_base * (1 + attempt_num / self.hparams.max_guesses)
+        is_potential_answer = np.isin(
+            self.working_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}'),
+            self.word_bank.possible_word_bank.view(f'V{self.working_word_bank.shape[1] * 4}')
+        )
+        is_potential_answer = np.broadcast_to(
+            is_potential_answer, self.working_word_bank.shape
+        )
 
-        # Apply answer weighting in a vectorized manner
-        word_entropies *= 1 + (is_potential_answer * answer_weights)
+        non_valid_penalty = 1 / (1 + np.exp(1.3 * attempt_num - self.hparams.max_guesses - 2))
+        # word_entropies *= np.where(is_potential_answer, 1, non_valid_penalty)
+
+        return word_entropies
+
+    def _apply_hparams_old(self, green_entropy, yellow_entropy, white_entropy):
+        weighted_entropy = green_entropy + yellow_entropy + white_entropy
+        word_entropies = weighted_entropy[self.working_word_bank, np.arange(self.working_word_bank.shape[1])]
+
+        for i, word in enumerate(self.working_word_bank):
+            # For each word, identify unique characters
+            unique_chars, counts = np.unique(word, return_counts=True)
+
+            for char_idx, count in zip(unique_chars, counts):
+                # Get the positions where the current character appears
+                char_positions = np.where(word == char_idx)[0]  # Get positions for this character
+
+                yellow_penalty = (1 + (1 / count)) / 2
+                white_penalty = 1 / count
+
+                # Apply the diminishing factor to yellow entropy for repeated characters
+                for idx, pos in enumerate(char_positions):
+
+                    word_entropies[i, pos] = green_entropy[char_idx, pos] + yellow_entropy[char_idx, pos] * yellow_penalty + white_entropy[char_idx] * white_penalty
 
         return word_entropies
 
@@ -152,6 +174,7 @@ class WordScorerEntropy:
 
         :return: NumPy array containing scores for all words.
         """
+        self.working_word_bank = self.current_word_bank
         green_entropy, yellow_entropy, white_entropy = self._calculate_entropy_scores()
 
         # Weight the entropies based on the hyperparameters
