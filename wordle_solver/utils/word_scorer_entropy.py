@@ -139,8 +139,11 @@ class WordScorerEntropy:
         is_potential_answer = np.broadcast_to(
             is_potential_answer, self.working_word_bank.shape
         )
-
         non_valid_penalty = 1 / (1 + np.exp(1.3 * attempt_num - self.hparams.max_guesses - 2))
+        if len(self.word_bank.possible_word_bank <= 2) or attempt_num == self.hparams.max_guesses:
+            # if there are less than two words left...or it is our last guess just punt it
+            non_valid_penalty = 0.0
+
         word_entropies *= np.where(is_potential_answer, 1, non_valid_penalty)
 
         return word_entropies

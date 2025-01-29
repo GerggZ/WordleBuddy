@@ -57,6 +57,10 @@ class WordleGuesser:
         :param num_best_guesses: Number of best guesses to return.
         :return: A list of the best words as strings, sorted by entropy score.
         """
+        if self.word_bank.possible_word_bank.size == 0:
+            # the word bank is empty, something horrible has happened
+            return ['No Viable Guesses']
+
         scores = self.scorer.score_word_bank(attempt_num=len(self.attempts) + 1)
         num_available = len(self.scorer.current_word_bank)
 
@@ -64,16 +68,16 @@ class WordleGuesser:
         num_best_guesses = min(num_best_guesses, num_available)
 
         best_indices = np.argsort(scores)[::-1][:num_best_guesses]
-        best_guesses_ascii = [self.scorer.working_word_bank[i] for i in best_indices]
+        best_guesses_ascii = [
+            self.scorer.working_word_bank[i]
+            for i in best_indices
+            if scores[i] > 0
+        ]
         best_guesses_chars = [self.word_bank.decode_word(word) for word in best_guesses_ascii]
 
-        words_n_order = [
-            self.word_bank.decode_word(
-                self.scorer.working_word_bank[index]
-            )
-            for index in np.argsort(scores)[::-1]
-        ]
-
+        if not best_guesses_chars:
+            # there was no positive score, something horrible has happened
+            return ['No Viable Guesses']
         # Return best guesses as a list of strings
         return best_guesses_chars
 
