@@ -67,6 +67,13 @@ class WordleGuesser:
         best_guesses_ascii = [self.scorer.working_word_bank[i] for i in best_indices]
         best_guesses_chars = [self.word_bank.decode_word(word) for word in best_guesses_ascii]
 
+        words_n_order = [
+            self.word_bank.decode_word(
+                self.scorer.working_word_bank[index]
+            )
+            for index in np.argsort(scores)[::-1]
+        ]
+
         # Return best guesses as a list of strings
         return best_guesses_chars
 

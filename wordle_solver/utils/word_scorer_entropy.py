@@ -141,7 +141,7 @@ class WordScorerEntropy:
         )
 
         non_valid_penalty = 1 / (1 + np.exp(1.3 * attempt_num - self.hparams.max_guesses - 2))
-        # word_entropies *= np.where(is_potential_answer, 1, non_valid_penalty)
+        word_entropies *= np.where(is_potential_answer, 1, non_valid_penalty)
 
         return word_entropies
 
