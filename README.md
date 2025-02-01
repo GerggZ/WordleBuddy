@@ -1,4 +1,4 @@
-# WordleSolver
+# WordleBuddy
 
 A Python-based Wordle solver that assists in solving Wordle puzzles by processing feedback from guesses and narrowing down possible word choices. The solver can be used both through a terminal-based interface or by importing the `WordleGuesser` class.
 
@@ -11,15 +11,15 @@ A Python-based Wordle solver that assists in solving Wordle puzzles by processin
 
 ## Installation
 
-You can install `wordle_solver` directly using pip:
+You can install `wordle_buddy` directly using pip:
 
 ```bash
-pip install wordle_solver
+pip install wordle_buddy
 ```
 
 ## Usage
 
-There are two main ways to use the Wordle solver:
+There are two main ways to use the Wordle Buddy:
 
 ### 1. Terminal Version
 
@@ -36,7 +36,7 @@ This will prompt you for guesses and feedback interactively. The program will su
 You can also import and use the solver in your Python projects:
 
 ```python
-from wordle_solver.guesser import WordleGuesser
+from wordle_buddy.guesser import WordleGuesser
 
 # Create an instance of the WordleGuesser class
 wordle_guesser = WordleGuesser(language='english')
@@ -70,11 +70,11 @@ You can follow the game’s main loop using the `play()` method, which:
 
 ## Project Structure
 
-- `wordle_solver/`
+- `wordle_buddy/`
   - `__init__.py`: Marks the directory as a package.
   - `guesser.py`: Contains the core `WordleGuesser` class with logic for processing guesses and generating optimal guesses.
   - `english_word_bank.txt`: A list of valid English words for the game (stored in a text file).
-- `terminal_version.py`: A command-line interface to interact with the Wordle solver.
+- `terminal_version.py`: A command-line interface to interact with the Wordle Buddy.
 - `requirements.txt`: Lists any required Python dependencies.
 
 ## Contribution
