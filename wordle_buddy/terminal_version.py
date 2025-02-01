@@ -1,4 +1,4 @@
-from wordle_solver.guesser import WordleGuesser
+from wordle_buddy.guesser import WordleGuesser
 import numpy as np
 import time
 

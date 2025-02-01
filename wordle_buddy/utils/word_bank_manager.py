@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 from typing import Dict, List
 import importlib.resources as pkg_resources
 
-from wordle_solver.word_banks import __name__ as word_banks_package  # Package name reference
+from wordle_buddy.word_banks import __name__ as word_banks_package  # Package name reference
 
 
 class WordBankManager:

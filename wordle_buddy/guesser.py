@@ -1,8 +1,8 @@
 import numpy as np
 
-from wordle_solver.utils.word_bank_manager import WordBankManager
-from wordle_solver.utils.word_scorer_entropy import WordScorerEntropy
-from wordle_solver.utils.hyperparameters import Hyperparameters
+from wordle_buddy.utils.word_bank_manager import WordBankManager
+from wordle_buddy.utils.word_scorer_entropy import WordScorerEntropy
+from wordle_buddy.utils.hyperparameters import Hyperparameters
 
 
 class WordleGuesser:

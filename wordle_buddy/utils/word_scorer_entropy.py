@@ -3,8 +3,8 @@ from numpy.typing import NDArray
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from wordle_solver.utils.word_bank_manager import WordBankManager
-    from wordle_solver.utils.hyperparameters import Hyperparameters
+    from wordle_buddy.utils.word_bank_manager import WordBankManager
+    from wordle_buddy.utils.hyperparameters import Hyperparameters
 
 
 class WordScorerEntropy:
