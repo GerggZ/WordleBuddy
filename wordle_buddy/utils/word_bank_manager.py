@@ -30,7 +30,7 @@ class WordBankManager:
             with pkg_resources.files(word_banks_package).joinpath(file_name).open("rb") as file:
                 word_list = np.load(file)  # Load `.npy` file
         except FileNotFoundError:
-            raise FileNotFoundError(f"Word bank file '{file_name}' not found in package. Ensure it exists in `wordle_solver/word_banks/`.")
+            raise FileNotFoundError(f"Word bank file '{file_name}' not found in package. Ensure it exists in `wordle_buddy/word_banks/`.")
 
         # Convert characters to ASCII values
         word_bank = np.array([[ord(char) for char in word] for word in word_list], dtype=np.int32)
